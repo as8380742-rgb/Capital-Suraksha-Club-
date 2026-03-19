@@ -1,5 +1,4 @@
 flask
 gunicorn
-pandas
-python-dotenv
+
 
