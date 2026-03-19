@@ -1,129 +1,102 @@
-import os, sqlite3, random, requests
-from flask import Flask, render_template_string, request, jsonify, session, redirect
+import os, sqlite3, random
+from flask import Flask, request, jsonify, session, render_template_string, redirect
 
 app = Flask(__name__)
-app.secret_key = "CSC_ULTRA_FIXED_V3"
-
-# --- CONFIG ---
-FAST2SMS_KEY = "YOUR_API_KEY_HERE"
-YOUR_UPI = "8587965337-1@nyes"
+app.secret_key = "CSC_PHASE2"
 
 # --- DATABASE ---
 def init_db():
-    conn = sqlite3.connect('database.db', check_same_thread=False)
-    cursor = conn.cursor()
-    cursor.execute('''CREATE TABLE IF NOT EXISTS users (
-        id TEXT PRIMARY KEY, pin TEXT, plan TEXT DEFAULT 'Free')''')
+    conn = sqlite3.connect('db.db', check_same_thread=False)
+    conn.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id TEXT PRIMARY KEY,
+        pin TEXT,
+        plan TEXT DEFAULT 'Free',
+        daily_loss INTEGER DEFAULT 0,
+        trade_count INTEGER DEFAULT 0,
+        max_loss INTEGER DEFAULT 500,
+        kill_switch INTEGER DEFAULT 0,
+        last_result TEXT DEFAULT '',
+        discipline_score INTEGER DEFAULT 100
+    )
+    """)
     conn.commit()
     return conn
 
 db = init_db()
 
-# --- SEND OTP ---
-def send_otp_sms(number, otp):
-    url = "https://www.fast2sms.com/dev/bulkV2"
-    headers = {"authorization": FAST2SMS_KEY}
-
-    payload = {
-        "route": "v3",
-        "sender_id": "TXTIND",
-        "message": f"Your CSC OTP is {otp}",
-        "language": "english",
-        "numbers": number
-    }
-
-    try:
-        response = requests.post(url, data=payload, headers=headers)
-        data = response.json()
-        print("SMS RESPONSE:", data)
-
-        return data.get("status") == "success"
-    except Exception as e:
-        print("ERROR:", e)
-        return False
-
 # --- UI ---
 HTML = """
-<!DOCTYPE html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CSC</title>
-<style>
-body{background:#0b0f19;color:white;text-align:center;font-family:sans-serif;}
-.card{background:#161b22;padding:20px;border-radius:10px;margin:20px;}
-input{width:100%;padding:10px;margin:10px 0;background:#0d1117;border:1px solid #333;color:white;}
-.btn{width:100%;padding:12px;background:#238636;color:white;border:none;border-radius:5px;}
-</style>
-</head>
-<body>
-
 <h2>🛡️ Capital Suraksha Club</h2>
 
 {% if not logged_in %}
-<div class="card">
-    <input id="u" type="number" placeholder="Enter Mobile Number">
-    <div id="otpBox" style="display:none;">
-        <input id="o" type="number" placeholder="Enter OTP">
-        <input id="p" type="password" placeholder="Set PIN">
-    </div>
-    <button id="btn" class="btn" onclick="go()">Get OTP</button>
-</div>
+
+<input id="num" placeholder="Enter Mobile"><br><br>
+<input id="pin" placeholder="PIN"><br><br>
+
+<button onclick="login()">Login</button>
+
 {% else %}
-<div class="card">
-    <p>Welcome: {{uid}}</p>
-    <p>UPI: {{upi}}</p>
-</div>
+
+<h3>Welcome {{uid}}</h3>
+
+<p>Daily Loss: ₹{{loss}}</p>
+<p>Trades Today: {{trades}} / 2</p>
+<p>Max Loss Limit: ₹{{max_loss}}</p>
+<p>Discipline Score: {{score}}</p>
+
+<button onclick="addTrade('win')">Add WIN</button>
+<button onclick="addTrade('loss')">Add LOSS</button>
+
+<br><br>
+
+<button onclick="kill()">🔴 STOP TRADING</button>
+<button onclick="resetDay()">Reset Day</button>
+
+<br><br>
+
 <a href="/logout">Logout</a>
+
 {% endif %}
 
 <script>
-let step = 1;
+function login(){
+    let num = document.getElementById("num").value;
+    let pin = document.getElementById("pin").value;
 
-function go(){
-    let num = document.getElementById('u').value;
+    fetch('/login',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({num:num,pin:pin})
+    })
+    .then(r=>r.json())
+    .then(d=>{
+        alert(d.msg);
+        if(d.success) location.reload();
+    });
+}
 
-    if(num.length != 10){
-        alert("Enter valid 10 digit number");
-        return;
-    }
+function addTrade(type){
+    fetch('/trade',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({type:type})
+    })
+    .then(r=>r.json())
+    .then(d=>{
+        alert(d.msg);
+        location.reload();
+    });
+}
 
-    if(step === 1){
-        fetch('/api/send_otp',{
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({id:num})
-        })
-        .then(r=>r.json())
-        .then(d=>{
-            alert(d.msg);
-            if(d.success){
-                document.getElementById('otpBox').style.display='block';
-                document.getElementById('btn').innerText='Verify OTP';
-                step = 2;
-            }
-        });
-    }
-    else{
-        let otp = document.getElementById('o').value;
-        let pin = document.getElementById('p').value;
+function kill(){
+    fetch('/kill').then(()=>location.reload());
+}
 
-        fetch('/api/auth',{
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({id:num,otp:otp,pin:pin})
-        })
-        .then(r=>r.json())
-        .then(d=>{
-            alert(d.msg);
-            if(d.success) location.reload();
-        });
-    }
+function resetDay(){
+    fetch('/reset').then(()=>location.reload());
 }
 </script>
-
-</body>
-</html>
 """
 
 # --- ROUTES ---
@@ -131,39 +104,116 @@ function go(){
 def home():
     if 'user' not in session:
         return render_template_string(HTML, logged_in=False)
-    return render_template_string(HTML, logged_in=True, uid=session['user'], upi=YOUR_UPI)
 
-@app.route('/api/send_otp', methods=['POST'])
-def send_otp():
-    number = request.json['id']
+    user = db.execute("SELECT * FROM users WHERE id=?", (session['user'],)).fetchone()
 
-    otp = str(random.randint(1000,9999))
-    session['otp'] = otp
+    return render_template_string(
+        HTML,
+        logged_in=True,
+        uid=session['user'],
+        loss=user[3],
+        trades=user[4],
+        max_loss=user[5],
+        score=user[8]
+    )
 
-    if send_otp_sms(number, otp):
-        return jsonify({"success":True,"msg":"OTP Sent Successfully ✅"})
-    else:
-        return jsonify({"success":False,"msg":"SMS Failed ❌ (Check API / Wallet)"})
-
-@app.route('/api/auth', methods=['POST'])
-def auth():
+# --- LOGIN ---
+@app.route('/login', methods=['POST'])
+def login():
     data = request.json
 
-    if data['otp'] != session.get('otp'):
-        return jsonify({"success":False,"msg":"Wrong OTP ❌"})
+    user = db.execute("SELECT * FROM users WHERE id=?", (data['num'],)).fetchone()
 
-    if not db.execute("SELECT * FROM users WHERE id=?", (data['id'],)).fetchone():
-        db.execute("INSERT INTO users (id, pin) VALUES (?,?)", (data['id'], data['pin']))
+    if not user:
+        db.execute("INSERT INTO users (id, pin) VALUES (?,?)", (data['num'], data['pin']))
         db.commit()
+        session['user'] = data['num']
+        return jsonify({"success":True,"msg":"Account Created ✅"})
 
-    session['user'] = data['id']
+    if user[1] != data['pin']:
+        return jsonify({"success":False,"msg":"Wrong PIN ❌"})
+
+    session['user'] = data['num']
     return jsonify({"success":True,"msg":"Login Success ✅"})
 
+# --- TRADE LOGIC ---
+@app.route('/trade', methods=['POST'])
+def trade():
+    user_id = session['user']
+    data = request.json
+
+    user = db.execute("SELECT * FROM users WHERE id=?", (user_id,)).fetchone()
+
+    daily_loss = user[3]
+    trades = user[4]
+    max_loss = user[5]
+    kill = user[6]
+    last = user[7]
+    score = user[8]
+
+    # ❌ Kill switch check
+    if kill == 1:
+        return jsonify({"msg":"Trading stopped by Kill Switch ❌"})
+
+    # ❌ Max trade limit
+    if trades >= 2:
+        return jsonify({"msg":"Max 2 trades reached 🔒"})
+
+    # ❌ Loss limit hit
+    if daily_loss >= max_loss:
+        return jsonify({"msg":"Loss limit hit 🚫"})
+
+    # ❌ Overtrading logic (2 consecutive loss)
+    if last == "loss" and data['type'] == "loss":
+        score -= 10
+        return jsonify({"msg":"Cooldown: consecutive losses 🚫"})
+
+    # ✅ Process trade
+    trades += 1
+
+    if data['type'] == "loss":
+        daily_loss += 250  # fixed loss per trade (edit later)
+        score -= 5
+        msg = "Loss recorded ❌"
+    else:
+        score += 2
+        msg = "Win recorded ✅"
+
+    db.execute("""
+    UPDATE users SET daily_loss=?, trade_count=?, last_result=?, discipline_score=?
+    WHERE id=?
+    """, (daily_loss, trades, data['type'], score, user_id))
+
+    db.commit()
+
+    # Psychology alert
+    if daily_loss >= max_loss:
+        msg += " | ALERT: Stop trading now!"
+
+    return jsonify({"msg":msg})
+
+# --- KILL SWITCH ---
+@app.route('/kill')
+def kill():
+    db.execute("UPDATE users SET kill_switch=1 WHERE id=?", (session['user'],))
+    db.commit()
+    return "Stopped"
+
+# --- RESET DAY ---
+@app.route('/reset')
+def reset():
+    db.execute("""
+    UPDATE users 
+    SET daily_loss=0, trade_count=0, kill_switch=0, last_result=''
+    WHERE id=?
+    """, (session['user'],))
+    db.commit()
+    return "Reset"
+
+# --- LOGOUT ---
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect('/')
 
-# --- RUN ---
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000)
+app.run()
