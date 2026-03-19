@@ -2,15 +2,15 @@ import os, sqlite3, random, requests
 from flask import Flask, render_template_string, request, jsonify, session, redirect
 
 app = Flask(__name__)
-app.secret_key = "CSC_ULTRA_FIXED_2026"
+app.secret_key = "CSC_FINAL_UPDATED_2026"
 
 # --- CONFIGURATION ---
-# Yahan apni real key dalo quotes ke andar
+# Bhai, yahan apni Fast2SMS API Key dalo
 FAST2SMS_KEY = 'Plwd********************' 
-YOUR_WHATSAPP = "919654197757"
-YOUR_UPI = "as8380742-1@okicici"
+YOUR_WHATSAPP = "918287550979"
+YOUR_UPI = "8587965337-1@nyes"
 
-# --- DATABASE ---
+# --- DATABASE SETUP ---
 def init_db():
     conn = sqlite3.connect('database.db', check_same_thread=False)
     cursor = conn.cursor()
@@ -21,33 +21,20 @@ def init_db():
     return conn
 db = init_db()
 
-# --- FIXED SMS LOGIC ---
+# --- SMS LOGIC ---
 def send_otp_sms(to_number, otp):
     url = "https://www.fast2sms.com/dev/bulkV2"
     headers = {"authorization": FAST2SMS_KEY}
-    
-    # Try 1: OTP Route (0.45 Paisa - Best for your 100rs)
-    payload_otp = {
-        "variables_values": str(otp),
-        "route": "otp", 
+    payload = {
+        "route": "q",
+        "message": f"Aapka Capital Suraksha Club OTP hai: {otp}",
+        "language": "english",
         "numbers": str(to_number),
     }
-    
     try:
-        res = requests.post(url, data=payload_otp, headers=headers).json()
-        if res.get("return"): return True
-        
-        # Try 2: Quick SMS Backup (Agar OTP route busy ho)
-        payload_q = {
-            "route": "q",
-            "message": f"CSC Login OTP: {otp}",
-            "language": "english",
-            "numbers": str(to_number),
-        }
-        res_q = requests.post(url, data=payload_q, headers=headers).json()
-        return res_q.get("return")
-    except Exception as e:
-        print(f"SMS Error: {e}")
+        response = requests.post(url, data=payload, headers=headers)
+        return response.json().get("return")
+    except:
         return False
 
 # --- UI DESIGN ---
@@ -61,8 +48,7 @@ HTML_MAIN = """
         body { font-family: sans-serif; background: #0b0f19; color: white; padding: 20px; text-align:center; }
         .card { background: #161b22; padding: 20px; border-radius: 12px; border: 1px solid #30363d; margin-bottom: 20px; text-align:left; }
         input { width: 100%; padding: 12px; margin: 10px 0; background: #0d1117; border: 1px solid #30363d; color: white; border-radius: 6px; box-sizing: border-box; }
-        .btn { width: 100%; padding: 14px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-blue { background: #238636; color: white; }
+        .btn { width: 100%; padding: 14px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; background: #238636; color: white; }
     </style>
 </head>
 <body>
@@ -72,17 +58,18 @@ HTML_MAIN = """
         <h3>Login via SMS</h3>
         <input id="uid" type="number" placeholder="Mobile Number">
         <div id="otp_box" style="display:none;">
-            <input id="uotp" type="number" placeholder="Enter 4-Digit OTP">
-            <input id="upin" type="password" placeholder="Set 6-Digit Login PIN">
+            <input id="uotp" type="number" placeholder="Enter OTP">
+            <input id="upin" type="password" placeholder="Set 6-Digit PIN">
         </div>
-        <button id="abtn" class="btn btn-blue" onclick="handleAuth()">Get OTP</button>
+        <button id="abtn" class="btn" onclick="handleAuth()">Get OTP</button>
     </div>
     {% else %}
     <div class="card">
-        <p>Welcome, {{user_id}} | Plan: <b>{{plan}}</b></p>
-        <button class="btn" style="background:#f0883e;" onclick="document.getElementById('qr').style.display='block'">Upgrade Plan</button>
+        <p>Welcome: {{user_id}} | Plan: <b>{{plan}}</b></p>
+        <button class="btn" style="background:#f0883e;" onclick="document.getElementById('qr').style.display='block'">Upgrade to Pro</button>
         <div id="qr" style="display:none; margin-top:10px; background:white; padding:10px; border-radius:8px;">
             <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=upi://pay?pa={{upi}}%26pn=CSC%26am=999">
+            <p style="color:black; font-size:12px; margin-top:5px;">Pay ₹999 to {{upi}}</p>
         </div>
     </div>
     <div style="text-align:center;"><a href="/logout" style="color:grey;">Logout</a></div>
@@ -106,7 +93,6 @@ HTML_MAIN = """
 </html>
 """
 
-# --- BACKEND ROUTES ---
 @app.route('/')
 def home():
     if 'user' not in session: return render_template_string(HTML_MAIN, logged_in=False)
@@ -118,8 +104,8 @@ def api_send_otp():
     otp = str(random.randint(1000, 9999))
     session['temp_otp'] = otp
     if send_otp_sms(request.json['id'], otp):
-        return jsonify({"success": True, "msg": "OTP Sent! 📱"})
-    return jsonify({"success": False, "msg": "SMS Failed! Fast2SMS API Key ya Wallet balance check karein."})
+        return jsonify({"success": True, "msg": "OTP Bhej Diya Gaya Hai! ✅"})
+    return jsonify({"success": False, "msg": "SMS Failed! Wallet ya API Key check karein."})
 
 @app.route('/api/auth', methods=['POST'])
 def api_auth():
@@ -129,7 +115,7 @@ def api_auth():
         db.execute("INSERT INTO users (id, pin) VALUES (?,?)", (d['id'], d['pin']))
         db.commit()
     session['user'] = d['id']
-    return jsonify({"success": True, "msg": "Login Successful!"})
+    return jsonify({"success": True, "msg": "Login Ho Gaya!"})
 
 @app.route('/logout')
 def logout(): session.clear(); return redirect('/')
