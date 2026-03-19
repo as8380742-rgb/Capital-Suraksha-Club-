@@ -5,9 +5,10 @@ app = Flask(__name__)
 app.secret_key = "CSC_ULTRA_SECURE_2026"
 
 # --- CONFIGURATION (Tera Data) ---
-FAST2SMS_KEY = 'plwd********************' # Teri API Key yahan hai
-YOUR_WHATSAPP = "919654197757"
-YOUR_UPI = "as8380742-1@okicici"
+FAST2SMS_KEY = 'plwd********************'
+route = q # Teri API Key yahan hai
+YOUR_WHATSAPP = "918287550979"
+YOUR_UPI = "8587965337-1@nyes"
 
 # --- DATABASE SETUP ---
 def init_db():
