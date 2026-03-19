@@ -1,19 +1,17 @@
 import os
 from flask import Flask, render_template_string, request, jsonify, session
 import sqlite3
-import pyotp  # TOTP generate karne ke liye
+import pyotp 
 
 app = Flask(__name__)
-app.secret_key = "CSC_SUPER_SECRET" # Session secure rakhne ke liye
+app.secret_key = "CSC_SUPER_SECRET"
 
 # --- DATABASE SETUP ---
 def init_db():
     conn = sqlite3.connect('database.db')
     cursor = conn.cursor()
-    # Users table: Payment status aur details ke liye
     cursor.execute('''CREATE TABLE IF NOT EXISTS users 
                       (id INTEGER PRIMARY KEY, username TEXT, is_paid INTEGER DEFAULT 0, totp_key TEXT)''')
-    # Settings table: Risk management ke liye
     cursor.execute('''CREATE TABLE IF NOT EXISTS risk_rules 
                       (user_id INTEGER, max_loss REAL, max_trades INTEGER)''')
     conn.commit()
@@ -21,7 +19,7 @@ def init_db():
 
 init_db()
 
-# --- UI TEMPLATE (Pro Look) ---
+# --- UI TEMPLATE ---
 HTML_PRO = """
 <!DOCTYPE html>
 <html>
@@ -32,14 +30,13 @@ HTML_PRO = """
         body { font-family: sans-serif; background: #0f172a; color: white; margin: 0; padding: 15px; }
         .box { background: #1e293b; padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #334155; }
         .btn { background: #3b82f6; color: white; border: none; width: 100%; padding: 15px; border-radius: 10px; font-weight: bold; cursor: pointer; }
-        .status-paid { color: #22c55e; font-size: 12px; font-weight: bold; }
-        .status-unpaid { color: #ef4444; font-size: 12px; }
+        .status-paid { color: #22c55e; font-size: 14px; font-weight: bold; }
+        .status-unpaid { color: #ef4444; font-size: 14px; }
         input { width: 100%; padding: 12px; margin: 10px 0; background: #334155; border: none; border-radius: 8px; color: white; box-sizing: border-box;}
     </style>
 </head>
 <body>
     <h2>🛡️ CSC Professional</h2>
-    
     <div class="box">
         <h3>Account Status</h3>
         {% if is_paid %}
@@ -49,20 +46,12 @@ HTML_PRO = """
             <button class="btn" style="background:#f59e0b; margin-top:10px;">Pay Now to Activate</button>
         {% endif %}
     </div>
-
     <div class="box">
         <h3>Step 1: Broker Login (2FA)</h3>
         <input type="text" placeholder="Angel One Client ID">
         <input type="password" placeholder="API Key">
-        <input type="text" placeholder="TOTP Token (from Authenticator)">
+        <input type="text" placeholder="TOTP Token">
         <button class="btn">Connect Real-Time</button>
-    </div>
-
-    <div class="box" style="border-color: #ef4444;">
-        <h3>Step 2: Risk Engine (Kill-Switch)</h3>
-        <label>Stop Loss (M2M Amount)</label>
-        <input type="number" placeholder="e.g. 5000">
-        <button class="btn" style="background:#ef4444;">ACTIVATE PROTECTION</button>
     </div>
 </body>
 </html>
@@ -70,12 +59,10 @@ HTML_PRO = """
 
 @app.route('/')
 def home():
-    # Abhi ke liye hum 'is_paid' ko 0 dikhayenge jab tak payment module nahi judta
     return render_template_string(HTML_PRO, is_paid=0)
 
 if __name__ == "__main__":
-    # Railway environment se port uthayega, nahi toh default 5000 lega
+    # YE LINE SABSE ZAROORI HAI RAILWAY KE LIYE
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
-    
     
