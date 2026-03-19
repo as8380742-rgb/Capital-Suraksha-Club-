@@ -24,7 +24,7 @@ db = init_db()
 def send_otp_sms(to_number, otp):
     url = "https://www.fast2sms.com/dev/bulkV2"
     headers = {"authorization": FAST2SMS_KEY}
-    # Direct Quick SMS Route (₹5.00 cost)
+    # Direct Quick SMS Route
     payload = {
         "route": "q",
         "message": f"CSC OTP: {otp}",
@@ -33,10 +33,10 @@ def send_otp_sms(to_number, otp):
     }
     try:
         r = requests.post(url, data=payload, headers=headers).json()
-
         return r.get("return")
     except:
         return False
+
 
 # --- UI ---
 HTML = """
