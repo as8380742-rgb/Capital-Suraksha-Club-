@@ -74,7 +74,8 @@ def home():
     return render_template_string(HTML_PRO, is_paid=0)
 
 if __name__ == "__main__":
-    # Railway ke liye dynamic port setting
+    # Railway environment se port uthayega, nahi toh default 5000 lega
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
+    
     
