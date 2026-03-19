@@ -1,5 +1,5 @@
 flask
 dhanhq
-twilio
+requests
 gunicorn
 
