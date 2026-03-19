@@ -32,7 +32,8 @@ def send_otp_sms(to_number, otp):
         "numbers": str(to_number),
     }
     try:
-        r = requests.post(url, data=payload, headers=headers).json(.)
+        r = requests.post(url, data=payload, headers=headers).json()
+
         return r.get("return")
     except:
         return False
