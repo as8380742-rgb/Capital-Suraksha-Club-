@@ -6,7 +6,7 @@ app.secret_key = "CSC_ULTRA_FIXED_V2"
 
 # --- CONFIGURATION ---
 # Bhai, yahan apni REAL API KEY dalo bina * ke
-FAST2SMS_KEY = 'Plwd********************' 
+FAST2SMS_KEY = 'plwd********************' 
 YOUR_WHATSAPP = "918287550979"
 YOUR_UPI = "8587965337-1@nyes"
 
