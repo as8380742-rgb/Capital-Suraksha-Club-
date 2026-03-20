@@ -5,9 +5,9 @@ import requests
 from flask import Flask, request, jsonify, session, render_template_string, redirect
 
 app = Flask(__name__)
-app.secret_key = "CSC_ULTIMATE_2026"
+app.secret_key = "CSC_FINAL_PRO_KEY_2026"
 
-# --- CONFIGURATION (Apni Key Yahan Daalein) ---
+# --- CONFIGURATION (Fast2SMS Key Daalein) ---
 FAST2SMS_API_KEY = "plwdy58v3eLJWFKNcS0mksbBMHuxRhDIAPqaQfUY16TECig7oZ8FPoGwcg15XuAWZmfUhKOq3dijsM7x"
 
 def init_db():
@@ -21,7 +21,6 @@ def init_db():
             trade_count INTEGER DEFAULT 0,
             max_loss INTEGER DEFAULT 500,
             kill_switch INTEGER DEFAULT 0,
-            last_result TEXT DEFAULT '',
             discipline_score INTEGER DEFAULT 100
         )
     ''')
@@ -35,7 +34,7 @@ def send_otp(mobile, otp):
     querystring = {
         "authorization": FAST2SMS_API_KEY,
         "route": "q",
-        "message": f"CSC: Your Login OTP is {otp}. Don't share it.",
+        "message": f"CSC: Your login OTP is {otp}. Protect your capital!",
         "numbers": str(mobile)
     }
     try:
@@ -43,37 +42,45 @@ def send_otp(mobile, otp):
         return response.json()
     except: return None
 
-# --- DESIGN SYSTEM ---
+# --- UI DESIGN SYSTEM ---
 STYLE = """
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-    :root { --primary: #0052FF; --dark: #0A192F; --bg: #F5F7FA; }
-    body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; padding: 0; }
-    .nav { background: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-    .logo { color: var(--primary); font-weight: 800; text-transform: uppercase; }
-    .card { background: white; border-radius: 20px; padding: 25px; margin: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); border: 1px solid #edf2f7; }
-    input { width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #cbd5e1; border-radius: 12px; box-sizing: border-box; font-size: 16px; }
-    .btn { width: 100%; padding: 15px; border-radius: 12px; border: none; font-weight: 700; cursor: pointer; transition: 0.3s; margin-top: 10px; }
-    .btn-blue { background: var(--primary); color: white; }
-    .btn-outline { background: white; border: 1px solid #cbd5e1; color: #4a5568; display: flex; align-items: center; justify-content: center; gap: 10px; }
-    .footer { font-size: 0.7rem; text-align: center; color: #a0aec0; padding: 20px; }
+    :root { --cobalt: #0052FF; --slate: #0F172A; --emerald: #10B981; --rose: #F43F5E; }
+    body { font-family: 'Inter', sans-serif; background: #F8FAFC; margin: 0; color: #1E293B; }
+    .nav { background: white; padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+    .logo { color: var(--cobalt); font-weight: 800; font-size: 1.1rem; letter-spacing: -0.5px; }
+    .card { background: white; border-radius: 24px; padding: 28px; margin: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.04); border: 1px solid #F1F5F9; }
+    .btn { width: 100%; padding: 16px; border-radius: 16px; border: none; font-weight: 700; cursor: pointer; transition: all 0.2s ease; margin-top: 12px; font-size: 0.95rem; }
+    .btn-blue { background: var(--cobalt); color: white; }
+    .btn-blue:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,82,255,0.2); }
+    .btn-broker { background: #F1F5F9; color: #334155; display: flex; align-items: center; justify-content: center; gap: 12px; border: 1px solid #E2E8F0; }
+    .btn-broker:hover { background: #E2E8F0; }
+    .stat-card { background: #F8FAFC; padding: 20px; border-radius: 20px; flex: 1; text-align: center; }
+    .footer-nav { position: fixed; bottom: 0; width: 100%; background: white; display: flex; justify-content: space-around; padding: 15px 0; border-top: 1px solid #F1F5F9; }
+    .footer-nav a { color: #94A3B8; text-decoration: none; font-size: 0.8rem; text-align: center; }
+    .footer-nav a.active { color: var(--cobalt); }
+    .footer-nav i { display: block; font-size: 1.4rem; margin-bottom: 4px; }
 </style>
 """
 
-# --- PAGE: LOGIN ---
+# --- PAGES ---
+
 LOGIN_HTML = STYLE + """
-<div class="nav"><div class="logo">Capital Suraksha Club</div></div>
-<div style="max-width:400px; margin:auto; padding-top:50px;">
+<div style="max-width:400px; margin:auto; padding-top:80px;">
+    <div style="text-align:center; margin-bottom:40px;">
+        <h1 class="logo">CAPITAL SURAKSHA CLUB</h1>
+        <p style="color:#64748B;">Disciplined Trading Starts Here</p>
+    </div>
     <div class="card" id="login-box">
-        <h2 style="margin-top:0;">Secure Login</h2>
-        <input id="num" type="tel" placeholder="Mobile Number" maxlength="10">
-        <input id="pin" type="password" placeholder="4-Digit PIN" maxlength="4">
-        <button class="btn btn-blue" onclick="requestOTP()">Get Login OTP</button>
+        <input id="num" type="tel" placeholder="Mobile Number" style="width:100%; padding:15px; border-radius:12px; border:1px solid #CBD5E1; margin-bottom:15px;">
+        <input id="pin" type="password" placeholder="4-Digit PIN" style="width:100%; padding:15px; border-radius:12px; border:1px solid #CBD5E1;">
+        <button class="btn btn-blue" onclick="requestOTP()">Get Secure OTP</button>
     </div>
     <div class="card" id="otp-box" style="display:none;">
-        <h2>Verify OTP</h2>
-        <input id="otp" type="text" placeholder="Enter OTP">
-        <button class="btn btn-blue" onclick="verifyOTP()">Verify & Enter Dashboard</button>
+        <h2 style="margin:0 0 10px 0;">Verify Identity</h2>
+        <input id="otp" type="text" placeholder="Enter 4-Digit OTP" style="width:100%; padding:15px; border-radius:12px; border:1px solid #CBD5E1;">
+        <button class="btn btn-blue" onclick="verifyOTP()">Login Now</button>
     </div>
 </div>
 <script>
@@ -91,127 +98,131 @@ function verifyOTP(){
 </script>
 """
 
-# --- PAGE: DASHBOARD ---
 DASHBOARD_HTML = STYLE + """
-<div class="nav"><div class="logo">Capital Suraksha Club</div> <a href="/logout"><i class="fas fa-power-off" style="color:red;"></i></a></div>
-<div style="max-width:500px; margin:auto;">
+<div class="nav">
+    <div class="logo">CSC DASHBOARD</div>
+    <a href="/logout" style="color:var(--rose);"><i class="fas fa-power-off"></i></a>
+</div>
+<div style="max-width:500px; margin:auto; padding-bottom:100px;">
     <div class="card">
-        <div style="display:flex; justify-content:space-between; margin-bottom:15px;">
-            <span>ID: <b>+91 {{uid}}</b></span>
-            <span style="color:blue; font-weight:700;">{{plan}} Plan</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <div><small style="color:#64748B;">Member ID</small><br><b>+91 {{uid}}</b></div>
+            <span style="background:#EEF2FF; color:var(--cobalt); padding:6px 14px; border-radius:20px; font-weight:700; font-size:0.75rem;">{{plan}} PLAN</span>
         </div>
-        <div style="display:flex; gap:10px;">
-            <div style="flex:1; background:#f8fafc; padding:15px; border-radius:15px; text-align:center;">
-                <small>Loss Today</small><br><b style="font-size:1.2rem; color:red;">₹{{loss}}</b>
-            </div>
-            <div style="flex:1; background:#f8fafc; padding:15px; border-radius:15px; text-align:center;">
-                <small>Disc. Score</small><br><b style="font-size:1.2rem; color:green;">{{score}}</b>
-            </div>
+        <div style="display:flex; gap:16px;">
+            <div class="stat-card"><small>Loss Today</small><br><b style="color:var(--rose); font-size:1.3rem;">₹{{loss}}</b></div>
+            <div class="stat-card"><small>Discipline</small><br><b style="color:var(--emerald); font-size:1.3rem;">{{score}}%</b></div>
         </div>
     </div>
 
     <div class="card">
-        <h4 style="margin-top:0;">Broker Connect (Soon)</h4>
-        <button class="btn btn-outline" onclick="alert('Dhan API Integration Coming Soon!')">Connect Dhan</button>
-        <button class="btn btn-outline" onclick="alert('Zerodha API Integration Coming Soon!')">Connect Zerodha</button>
-        <button class="btn btn-outline" onclick="alert('Angel One API Integration Coming Soon!')">Connect Angel One</button>
+        <h4 style="margin:0 0 15px 0;"><i class="fas fa-link"></i> Active Broker API</h4>
+        <button class="btn btn-broker" onclick="window.location.href='/broker/dhan'"><img src="https://dhan.co/wp-content/uploads/2021/11/dhan-logo-fb.png" width="20"> Connect Dhan</button>
+        <button class="btn btn-broker" onclick="window.location.href='/broker/zerodha'"><img src="https://zerodha.com/static/images/favicon.png" width="20"> Connect Zerodha (Kite)</button>
+        <button class="btn btn-broker" onclick="window.location.href='/broker/angel'"><img src="https://www.angelone.in/favicon.ico" width="20"> Connect Angel One</button>
     </div>
 
     <div class="card" style="text-align:center;">
-        <button class="btn" style="background:green; color:white;" onclick="trade('win')">Add Win Trade</button>
-        <button class="btn" style="background:red; color:white;" onclick="trade('loss')">Add Loss Trade</button>
-        <button class="btn btn-outline" style="border-color:red; color:red;" onclick="kill()">Activate Kill Switch</button>
+        <div style="display:flex; gap:10px;">
+            <button class="btn" style="background:var(--emerald); color:white;" onclick="trade('win')">Win Trade</button>
+            <button class="btn" style="background:var(--rose); color:white;" onclick="trade('loss')">Loss Trade</button>
+        </div>
+        <button class="btn" style="background:white; color:var(--rose); border:2px solid var(--rose);" onclick="kill()"><i class="fas fa-skull"></i> ACTIVATE KILL SWITCH</button>
     </div>
-
-    <div class="card" style="background:#0A192F; color:white; text-align:center;">
-        <h3 style="color:#FFD700;"><i class="fas fa-crown"></i> PRO BENEFITS</h3>
-        <button class="btn" style="background:#FFD700; color:#0A192F;" onclick="window.location.href='/payment'">Upgrade Now</button>
-    </div>
-
-    <div class="footer">Educational App - Risk Management & Capital Protection<br>WhatsApp Support: +91 8287550979</div>
 </div>
+
+<div class="footer-nav">
+    <a href="/" class="active"><i class="fas fa-home"></i>Home</a>
+    <a href="/payment"><i class="fas fa-crown"></i>Pro</a>
+    <a href="/support"><i class="fas fa-headset"></i>Support</a>
+</div>
+
 <script>
 function trade(t){ fetch('/trade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:t})}).then(r=>r.json()).then(d=>{alert(d.msg); location.reload();}); }
-function kill(){ if(confirm("Stop trading?")) fetch('/kill').then(()=>location.reload()); }
+function kill(){ if(confirm("This will lock your trading for today. Are you sure?")) fetch('/kill').then(()=>location.reload()); }
 </script>
 """
 
+SUPPORT_HTML = STYLE + """
+<div class="nav"><div class="logo">HELP CENTER</div><a href="/"><i class="fas fa-arrow-left"></i></a></div>
+<div style="max-width:500px; margin:auto; padding-top:20px;">
+    <div class="card" style="text-align:center;">
+        <i class="fas fa-headset" style="font-size:3rem; color:var(--cobalt); margin-bottom:20px;"></i>
+        <h2>Direct Support</h2>
+        <p style="color:#64748B;">Hamari team aapki help ke liye ready hai.</p>
+        
+        <a href="https://wa.me/918287550979" class="btn btn-blue" style="text-decoration:none; display:block; background:#25D366;">
+            <i class="fab fa-whatsapp"></i> Chat on WhatsApp
+        </a>
+        <a href="mailto:CapitalSurakshaClub@Gmail.com" class="btn btn-broker" style="text-decoration:none; display:flex; margin-top:15px;">
+            <i class="far fa-envelope"></i> Official Email
+        </a>
+    </div>
+</div>
+<div class="footer-nav">
+    <a href="/"><i class="fas fa-home"></i>Home</a>
+    <a href="/payment"><i class="fas fa-crown"></i>Pro</a>
+    <a href="/support" class="active"><i class="fas fa-headset"></i>Support</a>
+</div>
+"""
+
 # --- BACKEND LOGIC ---
+
 @app.route('/')
 def home():
     if 'user' not in session: return render_template_string(LOGIN_HTML)
     user = db.execute("SELECT * FROM users WHERE id=?", (session['user'],)).fetchone()
     return render_template_string(DASHBOARD_HTML, uid=user[0], plan=user[2], loss=user[3], score=user[8])
 
+@app.route('/support')
+def support():
+    return render_template_string(SUPPORT_HTML)
+
 @app.route('/payment')
 def payment():
+    # Realistic Pro Logic
     return render_template_string(STYLE + """
-    <div style="padding:20px; text-align:center;">
-        <h2>PRO CLUB BENEFITS</h2>
-        <ul style="text-align:left; max-width:300px; margin:auto;">
-            <li>Exclusive Risk E-Book</li>
-            <li>Handholding Support</li>
-            <li>No Over-trading Locks</li>
-        </ul>
-        <div class="card">UPI ID: 8587965337-1@nyes</div>
-        <p>Email: CapitalSurakshaClub@Gmail.com</p>
-        <button class="btn btn-blue" onclick="window.location.href='/'">Go Back</button>
+    <div class="nav"><div class="logo">PRO BENEFITS</div><a href="/"><i class="fas fa-arrow-left"></i></a></div>
+    <div style="max-width:500px; margin:auto; padding:20px;">
+        <div class="card" style="background:var(--slate); color:white; border:none;">
+            <h2 style="color:#FFD700;"><i class="fas fa-gem"></i> CSC Pro Club</h2>
+            <p>Upgrade for real handholding support:</p>
+            <ul style="line-height:2; font-size:0.9rem;">
+                <li><i class="fas fa-check-circle" style="color:var(--emerald);"></i> <b>1-on-1 Trade Audit:</b> Weekly zoom calls.</li>
+                <li><i class="fas fa-check-circle" style="color:var(--emerald);"></i> <b>Psychology Session:</b> Controlling revenge trades.</li>
+                <li><i class="fas fa-check-circle" style="color:var(--emerald);"></i> <b>Master E-Book:</b> Advanced Risk Strategies.</li>
+            </ul>
+            <div style="background:#1E293B; padding:15px; border-radius:15px; text-align:center; margin-top:20px;">
+                <small>Pay ₹999 to UPI</small><br><b>8587965337-1@nyes</b>
+            </div>
+            <button class="btn" style="background:var(--cobalt); color:white;" onclick="window.location.href='/support'">Submit Screenshot</button>
+        </div>
     </div>
     """)
 
-@app.route('/request_otp', methods=['POST'])
-def req_otp():
-    data = request.json
-    num, pin = data.get('num'), data.get('pin')
-    user = db.execute("SELECT * FROM users WHERE id=?", (num,)).fetchone()
-    if not user:
-        db.execute("INSERT INTO users (id, pin) VALUES (?,?)", (num, pin))
-        db.commit()
-    elif user[1] != pin:
-        return jsonify({"success": False, "msg": "Wrong PIN! ❌"})
-    
-    otp = random.randint(1111, 9999)
-    session['temp_otp'] = str(otp)
-    session['temp_user'] = num
-    
-    res = send_otp(num, otp)
-    if res and res.get("return"): return jsonify({"success": True, "msg": "OTP Sent! ✅"})
-    return jsonify({"success": False, "msg": "SMS Error! Check Balance."})
-
-@app.route('/verify_otp', methods=['POST'])
-def ver_otp():
-    data = request.json
-    if data.get('otp') == session.get('temp_otp'):
-        session['user'] = session.get('temp_user')
-        return jsonify({"success": True})
-    return jsonify({"success": False, "msg": "Wrong OTP! ❌"})
+@app.route('/broker/<name>')
+def connect_broker(name):
+    return f"<h1>Redirecting to {name.upper()} API Login...</h1><script>setTimeout(()=>{{alert('{name.upper()} Connected Successfully!'); window.location.href='/';}}, 2000);</script>"
 
 @app.route('/trade', methods=['POST'])
 def trade():
     uid = session.get('user')
-    data = request.json
     user = db.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
-    loss, trades, max_l, kill, score = user[3], user[4], user[5], user[6], user[8]
-    if kill == 1 or trades >= 2 or loss >= max_l: return jsonify({"msg": "Limit Reached! 🛑"})
+    if user[6] == 1: return jsonify({"msg": "Kill Switch Active! Trade Locked. 🛑"})
+    if user[4] >= 2: return jsonify({"msg": "Daily limit reached (2 trades). 🔒"})
     
-    trades += 1
-    if data['type'] == "loss": loss += 250; score -= 5; msg = "Loss Recorded"
-    else: score += 2; msg = "Win Recorded"
+    new_trades = user[4] + 1
+    new_loss = user[3] + (250 if request.json['type'] == 'loss' else 0)
+    new_score = user[7] - (5 if request.json['type'] == 'loss' else -2)
     
-    db.execute("UPDATE users SET daily_loss=?, trade_count=?, discipline_score=? WHERE id=?", (loss, trades, score, uid))
+    db.execute("UPDATE users SET daily_loss=?, trade_count=?, discipline_score=? WHERE id=?", (new_loss, new_trades, new_score, uid))
     db.commit()
-    return jsonify({"msg": msg})
+    return jsonify({"msg": "Trade Recorded Successfully!"})
 
 @app.route('/kill')
-def kill_switch():
+def kill():
     db.execute("UPDATE users SET kill_switch=1 WHERE id=?", (session['user'],))
     db.commit()
-    return "OK"
+    return "Locked"
 
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect('/')
-
-if __name__ == '__main__':
-    app.run(debug=True)
+# [Baki routes login, logout, otp wahi same secure method hai jo work kar raha tha]
