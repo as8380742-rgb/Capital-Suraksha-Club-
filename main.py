@@ -8,7 +8,7 @@ app = Flask(__name__)
 app.secret_key = "CSC_PHASE2"
 
 # --- CONFIGURATION (Yahan apni API Key daalein) ---
-FAST2SMS_API_KEY = "PASTE_YOUR_FAST2SMS_API_KEY_HERE"
+FAST2SMS_API_KEY = "plwdy58v3eLJWFKNcS0mksbBMHuxRhDIAPqaQfUY16TECig7oZ8FPoGwcg15XuAWZmfUhKOq3dijsM7x"
 
 def init_db():
     conn = sqlite3.connect('db.db', check_same_thread=False)
